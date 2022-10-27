@@ -1,0 +1,43 @@
+<html>
+  <head>
+    <title>Camera Sensor Setup</title>
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+  </head>
+
+  <h1><b>Camera Sensor Device Setup:</h1><br>
+  <hr>
+  <div class="row">
+    <div class="column1">
+      <p class="cam" >Device Parameters:</p>
+      <br>
+      <label for="node_id">Node ID:</label>
+      <input type="text" maxlength="10" size="10" id="node_id" name="start" value="Node1" autofocus></input>
+      <br>
+
+      <label for="lora_id">LoRa Device Number:</label>
+      <input type="number" id="lora_id" min="000000000000001" max="999999999999999" value="200000000000001"></input>
+      <br>
+
+      <!--
+      <label for="cap_freq">Camera Capture Frequency (Minutes):</label>
+      <input max="60" size="2" min="1" type="number" id="cap_freq" value="6"></input>
+      <br>
+      -->
+
+      <label for="location">Device Location (City, State):</label>
+      <input text="text" id="location" size="14" value="Carolina Beach, NC">
+      <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+      <p>Device Status: OK</p>
+    </div>
+
+    <div class="column2">
+      <p class="cam">Live Camera Feed</p>
+      <img src="LiveFeed.jpg" alt="Live Camera Feed" width="500" height="400">
+
+    </div>
+  </div>
+
+  <input class="btn" type="button" name="exit_btn" value="Exit Setup">
+
+</html>
