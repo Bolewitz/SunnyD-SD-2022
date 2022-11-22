@@ -1,5 +1,10 @@
 ## ML Pipeline
 
+### Tensorflow and TFLite setup
+More documentation will be available soon.
+
+Create an environment with Tensorflow v2.5, or the branch of Tensorflow used by OpenMV/EdgeImpulse (ei-v.2.5.0)
+
 ### Binary Classification
 
 Included are notebooks for training, testing, and quantizing MobileNetV2 based models for binary classification of flooded/not_flooded.
