@@ -1,7 +1,4 @@
-# Basic Image Capture Code
-# Captures image every 6 minutes and saves using an index number to the SD card
-
-import sensor, image, pyb, time, usocket, network, sys
+import sensor, image, pyb, time, usocket, network, sys, machine, os
 from pyb import UART
 
 sensor.reset() # Initialize the camera sensor.
@@ -11,6 +8,8 @@ sensor.set_framesize(sensor.QVGA) # or sensor.QQVGA (or others)
 picture_index = [0]
 uart = UART(3, 9600)
 BLUE_LED_PIN = 3
+GRN_LED_PIN = 2
+RED_LED_PIN = 1
 
 
 ######## Webserver Setup #########################
@@ -223,8 +222,6 @@ def start_streaming(s, btn_exit):
     client.settimeout(2.0)
     print ('Connected to ' + addr[0] + ':' + str(addr[1]))
 
-    print('Made it here!')
-
     # Read request from client
     data = client.recv(1024)
     request = str(data)
@@ -260,11 +257,11 @@ def start_streaming(s, btn_exit):
 
 
 def video_streaming(s_stream, client):
-    print ('Waiting for connections..')
+    print ('Waiting for video stream..')
     client2, addr2 = s_stream.accept()
     # set client socket timeout to 2s
     client2.settimeout(2.0)
-    print ('Connected to ' + addr2[0] + ':' + str(addr2[1]))
+    print ('Video Stream connected to ' + addr2[0] + ':' + str(addr2[1]))
     # Read request from client
     data = client2.recv(1024)
     # Should parse client request here
@@ -294,61 +291,133 @@ def video_streaming(s_stream, client):
         client2.send(cframe)
         time.sleep(0.05)
 
-
 setup_param = {"node_value=" : "",  "lora_id=" : "", "local=" : ""}      # declare dictionary to hold setup values
 btn = [False]
 
-SSID ='OPMV_SETUP'     # Network SSID "OPMV_SETUP"
-KEY  ='828811setup'     # Network key  "828811setup"
-HOST =''     # Use first available interface
-PORT = 80  # Arbitrary non-privileged port
+delim = ','
+csvdata = {}
+lines_table = []
+setup_en = False
 
-# Reset sensor
-sensor.reset()
-sensor.set_framesize(sensor.QVGA)
-sensor.set_pixformat(sensor.RGB565)
+try:
+    with open('setup_data.csv', 'r') as setup_data:
+        for elem in setup_data:
+            lines_table.append(elem.rstrip('\n').rstrip('\r').split(delim))
 
-wifi_Setup(SSID, KEY)
+    dataline = lines_table[1:2][0]  #exclude the header line
 
-# Create server socket
-s = usocket.socket(usocket.AF_INET, usocket.SOCK_STREAM)
-s_stream = usocket.socket(usocket.AF_INET, usocket.SOCK_STREAM)
+    n = 0
+    for key in setup_param:
+        setup_param[key] =dataline[n]
+        n = n+1
 
-# Bind and listen
-s.bind([HOST, PORT])
-s.listen(5)
+    print(setup_param)
 
-s_stream.bind([HOST, 80])
-s_stream.listen(5)
+except:
+    print('setup_data.csv not found, entering setup.')
+    setup_en = True
 
-# Set server socket to blocking
-s.setblocking(True)
-s_stream.setblocking(True)
 
-while (btn[0] == False):
-    try:
-        start_streaming(s, btn)
-    except OSError as e:
-        print("socket error: ", e)
-        #sys.print_exception(e)
+if (setup_en == True):
+    SSID ='OPMV_SETUP'     # Network SSID "OPMV_SETUP"
+    KEY  ='828811setup'     # Network key  "828811setup"
+    HOST =''     # Use first available interface
+    PORT = 80  # Arbitrary non-privileged port
 
-print('Complete!')
-time.sleep(5)
+    # Reset sensor
+    sensor.reset()
+    sensor.set_framesize(sensor.QVGA)
+    sensor.set_pixformat(sensor.RGB565)
+
+    wifi_Setup(SSID, KEY)
+
+    # Create server socket
+    s = usocket.socket(usocket.AF_INET, usocket.SOCK_STREAM)
+    s_stream = usocket.socket(usocket.AF_INET, usocket.SOCK_STREAM)
+
+    # Bind and listen
+    s.bind([HOST, PORT])
+    s.listen(5)
+
+    s_stream.bind([HOST, 80])
+    s_stream.listen(5)
+
+    # Set server socket to blocking
+    s.setblocking(True)
+    s_stream.setblocking(True)
+
+    while (btn[0] == False):
+        try:
+            start_streaming(s, btn)
+        except OSError as e:
+            print("socket error: ", e)
+            #sys.print_exception(e)
+
+    try:                                                                        # Write setup parameters to csv file
+        with open('setup_data.csv','a') as setup_data:
+            header = ','.join(str(i) for i in setup_param.keys())
+            data = ','.join(str(i) for i in list(setup_param.values()))
+            setup_data.write(header+'\n')
+            setup_data.write(data+'\n')
+
+    except:
+        print('Error Trying to Write Setup Data File')
+
+    print('Complete!')
+    time.sleep(5)
 
 
 ############################################
 
+# Timelaps Photos
 
-while(True):
-    sensor.sleep(False) # exit sleep
+# Create and init RTC object. This will allow us to set the current time for
+rtc = pyb.RTC()
+
+uart = UART(3, 9600)        # Serial for Sparrow Board
+
+# Enable RTC interrupts every 6 minutes, camera will RESET after wakeup from deepsleep Mode.
+# rtc.wakeup(360000)
+
+while True:
+    sensor.reset() # Initialize the camera sensor.
+    sensor.set_pixformat(sensor.RGB565)
+    sensor.set_framesize(sensor.VGA)
+    sensor.skip_frames(time = 1000) # Let new settings take affect.
+
+    sensor.sleep(False)
+    time.sleep(1)   # wait 1 second for sensor wakeup
+    BLUE_LED_PIN = 3
+
+    # Extract the date and time from the RTC object.
+    dateTime = rtc.datetime()
+    year = str(dateTime[0])
+    month = '%02d' % dateTime[1]
+    day = '%02d' % dateTime[2]
+    hour = '%02d' % dateTime[4]
+    minute = '%02d' % dateTime[5]
+    second = '%02d' % dateTime[6]
+    subSecond = str(dateTime[7])
+
+    newName='I'+year+month+day+hour+minute+second # Image file name based on RTC
+
+    # Let people know we are about to take a picture.
     pyb.LED(BLUE_LED_PIN).on()
-    sensor.skip_frames(time = 500) # Let new settings take affect.
+
+    if not "images" in os.listdir(): os.mkdir("images") # Make a temp directory
+
     pyb.LED(BLUE_LED_PIN).off()
-    sensor.snapshot().save(str(picture_index[0]) + ".jpg")   # Save as index #
-    print("Image " + str(picture_index[0]) + " Saved.")    # Print saved image info
 
-    uart.write('Image '+str(picture_index[0])+' Printed')
+    # Take photo and save to SD card
+    sensor.skip_frames(time = 200) # Skip some frames
+    img = sensor.snapshot()
+    img.save('images/' + newName, quality=90)
 
-    picture_index[0] += 1
-    sensor.sleep(True) # Enter Sleep
-    time.sleep(360) # Sleep for 6 minutes
+    uart.write(newName + '.bmp Saved to SD Card.')
+    print(newName + '.bmp Saved to SD Card.')
+
+    time.sleep(1) # wait 1 second to print
+
+    # Enter Deepsleep Mode except for demo we are using light sleep mode to preserve serial Comms.
+    sensor.sleep(True)
+    time.sleep(360) # Sleep for 6 minutes (disable when using rtc interrupt)
