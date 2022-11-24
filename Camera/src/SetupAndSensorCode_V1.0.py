@@ -178,11 +178,11 @@ def wifi_Setup(SSID, KEY):
     # Init wlan module and connect to network
     print("Trying to connect... (may take a while)...")
     wlan = network.WINC()
-    wlan.connect(SSID, key=KEY, security=wlan.WPA_PSK) # Adjust after convention (SSID, key=KEY, security=wlan.WPA_PSK)
+    wlan.connect(SSID, key=KEY) # Adjust after convention (SSID, key=KEY, security=wlan.WPA_PSK)
 
     while(wlan.isconnected() == False):             # Initial Join for IP info
         try:
-            wlan.connect(SSID, key=KEY, security=wlan.WPA_PSK)
+            wlan.connect(SSID, key=KEY)
             print('....')
             time.sleep(1)
         except:
@@ -190,27 +190,6 @@ def wifi_Setup(SSID, KEY):
             time.sleep(10)      # Sleep for 10 seconds
 
     print("Getting IP:")
-
-    wlan_conn_tup = wlan.ifconfig()
-    wlan_ls = (list(wlan_conn_tup))
-    wlan_ip = (list(wlan_ls[0]))
-    wlan_ip[len(wlan_ip)-2] = '0'
-    wlan_ip[len(wlan_ip)-1] = '8'
-
-    wlan_ls[0] = ''.join(wlan_ip)
-    wlan_conn_tup = tuple(wlan_ls)
-    wlan.ifconfig((wlan_conn_tup))
-
-    wlan.disconnect()       # disconnect and connect again with the new static IP
-
-    while(wlan.isconnected() == False):             # Final Join
-
-        try:
-            wlan.connect(SSID, key=KEY, security=wlan.WPA_PSK)
-            print('....')
-            time.sleep(1)
-        except:
-            print('Error Occured.')
 
     print(wlan.ifconfig())
 
@@ -319,8 +298,8 @@ except:
 
 
 if (setup_en == True):
-    SSID ='OPMV_SETUP'     # Network SSID "OPMV_SETUP"
-    KEY  ='828811setup'     # Network key  "828811setup"
+    SSID =''     # Network SSID "OPMV_SETUP"
+    KEY  =''     # Network key  "828811setup"
     HOST =''     # Use first available interface
     PORT = 80  # Arbitrary non-privileged port
 
